@@ -27,7 +27,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 
-class PythonDebugEndToEndTest : CloudDebugTestCase() {
+// We use the corretto image for Python too, that is why we use the Java Task Def
+class PythonDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithJava") {
     @JvmField
     @Rule
     val projectRule = PythonCodeInsightTestFixtureRule()
@@ -72,8 +73,6 @@ class PythonDebugEndToEndTest : CloudDebugTestCase() {
                 val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
                 it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
             })
-            regionId(projectRule.project.activeRegion().id)
-            credentialProviderId(projectRule.project.activeCredentialProvider().id)
             containerOptions(mapOf("ContainerName" to ContainerOptions().apply {
                 platform = CloudDebuggingPlatform.PYTHON
                 startCommand = "python /${testScript.fileName}"
@@ -88,6 +87,8 @@ class PythonDebugEndToEndTest : CloudDebugTestCase() {
 
         runUnderRealCredentials(projectRule.project) {
             try {
+                configuration.regionId(projectRule.project.activeRegion().id)
+                configuration.credentialProviderId(projectRule.project.activeCredentialProvider().id)
                 configuration.checkConfiguration()
             } catch (_: RuntimeConfigurationWarning) {
                 // ignore warnings because we know what we're doing

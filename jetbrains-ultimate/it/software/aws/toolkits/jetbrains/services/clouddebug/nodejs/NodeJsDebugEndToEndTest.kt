@@ -29,13 +29,24 @@ import software.aws.toolkits.jetbrains.utils.checkBreakPointHit
 import software.aws.toolkits.jetbrains.utils.executeRunConfiguration
 import software.aws.toolkits.jetbrains.utils.rules.HeavyNodeJsCodeInsightTestFixtureRule
 
-class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
+class NodeJsDebugEndToEndTest : CloudDebugTestCase("CloudDebugTestECSClusterTaskDefinitionWithNode") {
     @Rule
     @JvmField
     val projectRule = HeavyNodeJsCodeInsightTestFixtureRule()
 
     private var previousRegistryValue: Boolean = true
     private val WEB_CONSOLE_JB_REGISTRY_KEY = "js.debugger.webconsole"
+
+    private val fileContents =
+        """
+        function abc() {
+            return 'Hello World'
+        }
+        
+        exports.lambdaHandler = async (event, context) => {
+            return abc()
+        };
+        """.trimIndent()
 
     @Before
     override fun setUp() {
@@ -63,7 +74,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
         setUpMocks()
 
         // set breakpoint
-        addBreakpoint(2)
+        projectRule.addBreakpoint()
 
         // run a run configuration
         val configuration = EcsCloudDebugRunConfiguration(
@@ -77,8 +88,6 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
                 val instrumentedServiceName = "cloud-debug-${EcsUtils.serviceArnToName(service.serviceArn())}"
                 it.replace(EcsUtils.serviceArnToName(it), instrumentedServiceName)
             })
-            regionId(projectRule.project.activeRegion().id)
-            credentialProviderId(projectRule.project.activeCredentialProvider().id)
             containerOptions(mapOf("ContainerName" to ContainerOptions().apply {
                 platform = CloudDebuggingPlatform.NODE
                 startCommand = "node /app.js"
@@ -88,6 +97,8 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
 
         val debuggerIsHit = checkBreakPointHit(projectRule.project)
         runUnderRealCredentials(projectRule.project) {
+            configuration.regionId(projectRule.project.activeRegion().id)
+            configuration.credentialProviderId(projectRule.project.activeCredentialProvider().id)
             configuration.checkConfiguration()
             executeRunConfiguration(configuration, DefaultDebugExecutor.EXECUTOR_ID)
         }
@@ -97,14 +108,7 @@ class NodeJsDebugEndToEndTest : CloudDebugTestCase("node") {
     private fun addNodeFile(): String {
         val fixture = projectRule.fixture
 
-        val psiFile = fixture.addFileToProject(
-            "hello_world/app.js",
-            """
-            exports.lambdaHandler = async (event, context) => {
-                return 'Hello World'
-            };
-            """.trimIndent()
-        )
+        val psiFile = fixture.addFileToProject("hello_world/app.js", fileContents)
 
         runInEdtAndWait {
             fixture.openFileInEditor(psiFile.virtualFile)

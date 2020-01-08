@@ -33,7 +33,7 @@ import java.util.concurrent.CompletionStage
 import javax.swing.Action
 import javax.swing.JComponent
 
-open class SamDeployDialog(
+class SamDeployDialog(
     private val project: Project,
     private val stackName: String,
     private val template: VirtualFile,
@@ -141,7 +141,7 @@ open class SamDeployDialog(
 
         return runCommand(message("serverless.application.deploy.step_name.create_change_set"), command) { output ->
             changeSetRegex.find(output.stdout)?.value
-                    ?: throw RuntimeException(message("serverless.application.deploy.change_set_not_found"))
+                ?: throw RuntimeException(message("serverless.application.deploy.change_set_not_found"))
         }
     }
 
@@ -214,8 +214,8 @@ open class SamDeployDialog(
         }
 
         return future.whenComplete { _, exception ->
-            TelemetryService.getInstance().record(project, "SamDeploy") {
-                datum(title) {
+            TelemetryService.getInstance().record(project) {
+                datum("SamDeploy.$title") {
                     count()
                     // exception can be null but is not annotated as nullable
                     metadata("hasException", exception != null)
@@ -225,7 +225,7 @@ open class SamDeployDialog(
         }
     }
 
-    protected open fun createProcess(command: GeneralCommandLine): OSProcessHandler =
+    private fun createProcess(command: GeneralCommandLine): OSProcessHandler =
         ProcessHandlerFactory.getInstance().createColoredProcessHandler(command)
 
     private companion object {

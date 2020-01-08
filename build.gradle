@@ -62,7 +62,7 @@ allprojects {
 }
 
 // Kotlin plugin seems to be bugging out when there are no kotlin sources
-configure(subprojects - project(":telemetry-client") - project(":schemas-client")) {
+configure(subprojects - project(":telemetry-client")) {
     apply plugin: 'kotlin'
 
     sourceSets {
@@ -110,6 +110,7 @@ subprojects {
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
         compile "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
+        compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1"
         testCompile "com.nhaarman.mockitokotlin2:mockito-kotlin:2.0.0"
         testCompile "io.mockk:mockk:1.9.3"
         testCompile "org.assertj:assertj-core:$assertjVersion"
@@ -144,12 +145,6 @@ subprojects {
 
             resourceDirs -= file("it-resources")
             testResourceDirs += file("it-resources")
-        }
-    }
-
-    if (gradle.startParameter.taskNames.contains("check")) {
-        tasks.withType(JavaCompile).all {
-            options.compilerArgs << "-Werror"
         }
     }
 
@@ -278,7 +273,7 @@ check.dependsOn coverageReport
 // community edition
 if (gradle.startParameter.taskNames.contains("runIde")) {
     // Only disable this if running from root project
-    if (gradle.startParameter.projectDir == project.rootProject.rootDir
+    if (project.projectDir == project.rootProject.rootDir
         || System.properties.containsKey("idea.gui.tests.gradle.runner")) {
         println("Top level runIde selected, excluding sub-projects' runIde")
         gradle.taskGraph.whenReady { graph ->
@@ -288,9 +283,7 @@ if (gradle.startParameter.taskNames.contains("runIde")) {
                         it.enabled = false
                     }
                 } else {
-                    if (it.name == "runIde" &&
-                        it.project != project(':jetbrains-core') &&
-                        it.project != project(':jetbrains-rider')) {
+                    if (it.name == "runIde" && it.project != project(':jetbrains-core')) {
                         it.enabled = false
                     }
                 }

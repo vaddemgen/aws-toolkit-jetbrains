@@ -155,6 +155,9 @@
 
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.CloudDebugSettings"/>
 
+        <!-- TODO: Switch to <projectListener> FIX_WHEN_MIN_IS_193 -->
+        <backgroundPostStartupActivity implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialStatusNotification"/>
+
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
         <moduleService serviceImplementation="software.aws.toolkits.jetbrains.settings.DeploySettings"/>
@@ -163,7 +166,7 @@
                         serviceImplementation="software.aws.toolkits.jetbrains.core.credentials.DefaultProjectAccountSettingsManager"
                         testServiceImplementation="software.aws.toolkits.jetbrains.core.credentials.MockProjectAccountSettingsManager"/>
 
-        <statusBarWidgetProvider implementation="software.aws.toolkits.jetbrains.core.AwsSettingsPanelInstaller"/>
+        <statusBarWidgetProvider implementation="software.aws.toolkits.jetbrains.core.credentials.AwsSettingsPanelInstaller"/>
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.notification.NoticeStartupActivity"/>
@@ -216,6 +219,7 @@
         <projectTemplatesFactory implementation="software.aws.toolkits.jetbrains.ui.wizard.SamProjectGeneratorIntelliJAdapter" />
 
         <webHelpProvider implementation="software.aws.toolkits.jetbrains.core.help.HelpIdTranslator"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.s3.S3ViewerEditorProvider"/>
     </extensions>
 
     <extensions defaultExtensionNs="JavaScript.JsonSchema">
@@ -249,15 +253,11 @@
             <action id="lambda.function.create" class="software.aws.toolkits.jetbrains.services.lambda.upload.CreateLambdaFunction"/>
         </group>
 
-        <group id="aws.toolkit.explorer.lambda.function.immutable" popup="false" compact="false">
+        <group id="aws.toolkit.explorer.lambda.function" popup="false" compact="false">
             <reference ref="RunContextGroupInner"/>
             <separator/>
             <action id="lambda.function.gotohandler"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.GoToHandlerAction"/>
-        </group>
-
-        <group id="aws.toolkit.explorer.lambda.function" popup="false" compact="false">
-            <reference ref="aws.toolkit.explorer.lambda.function.immutable"/>
             <separator/>
             <action id="lambda.function.updateConfiguration"
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.UpdateFunctionConfigurationAction"/>
@@ -272,7 +272,23 @@
                     class="software.aws.toolkits.jetbrains.core.stack.OpenStackUiAction"/>
             <separator/>
             <action id="cloudformation.stack.delete"
-                    class="software.aws.toolkits.jetbrains.services.cloudformation.DeleteCloudFormationStackAction"/>
+                    class="software.aws.toolkits.jetbrains.services.cloudformation.actions.DeleteStackAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.s3" popup="false" compact="false">
+        <action id="s3.create.bucket"
+                class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CreateBucketAction"/>
+        </group>
+
+        <group id="aws.toolkit.explorer.s3.bucket" popup="true" compact="false">
+            <action id="s3.open.bucket.viewer"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.OpenBucketViewerAction"/>
+            <separator/>
+            <action id="s3.copy.bucketname.check"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CopyBucketNameAction"/>
+            <separator/>
+            <action id="s3.delete.bucket"
+                    class="software.aws.toolkits.jetbrains.services.s3.bucketActions.DeleteBucketAction"/>
         </group>
 
         <group id="aws.toolkit.explorer.schemas" popup="true" compact="false">
@@ -293,7 +309,7 @@
                     class="software.aws.toolkits.jetbrains.services.schemas.code.DownloadCodeForSchemaAction"/>
         </group>
 
-        <action class="software.aws.toolkits.jetbrains.core.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
+        <action class="software.aws.toolkits.jetbrains.core.credentials.SettingsSelectorAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
         <action id="serverless.application.deploy" class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>
 

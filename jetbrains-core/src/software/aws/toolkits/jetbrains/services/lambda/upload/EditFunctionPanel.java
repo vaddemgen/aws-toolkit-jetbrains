@@ -24,7 +24,7 @@ import software.amazon.awssdk.services.lambda.model.Runtime;
 import software.aws.toolkits.jetbrains.services.iam.IamResources;
 import software.aws.toolkits.jetbrains.services.iam.IamRole;
 import software.aws.toolkits.jetbrains.services.lambda.LambdaWidgets;
-import software.aws.toolkits.jetbrains.services.s3.S3Resources;
+import software.aws.toolkits.jetbrains.services.s3.resources.S3Resources;
 import software.aws.toolkits.jetbrains.ui.EnvironmentVariablesTextField;
 import software.aws.toolkits.jetbrains.ui.HandlerPanel;
 import software.aws.toolkits.jetbrains.ui.ResourceSelector;
@@ -81,7 +81,7 @@ public class EditFunctionPanel {
         handlerPanel = new HandlerPanel(project);
         runtimeModel = new SortedComboBoxModel<>(Comparator.comparing(Runtime::toString, Comparator.naturalOrder()));
         runtime = new ComboBox<>(runtimeModel);
-        envVars = new EnvironmentVariablesTextField(project);
+        envVars = new EnvironmentVariablesTextField();
         memorySlider = LambdaWidgets.lambdaMemory();
         timeoutSlider = LambdaWidgets.lambdaTimeout();
         iamRole = ResourceSelector.builder(project).resource(IamResources.LIST_LAMBDA_ROLES).build();

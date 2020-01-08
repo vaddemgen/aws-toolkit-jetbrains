@@ -49,6 +49,12 @@ class ResourceSelectorTest {
         val comboBox = ResourceSelector.builder(projectRule.project).resource(mockResource).build()
 
         comboBox.reload()
+
+        // There is a potential timing issue with reload since it's asyncrhonous but does not return a future
+        // so, if we hit it, sleep to fix the issue
+        if (comboBox.isLoading) {
+            Thread.sleep(200)
+        }
         comboBox.selectedItem { it.endsWith("z") }
 
         retryableAssert {
@@ -163,7 +169,7 @@ class ResourceSelectorTest {
         mockResourceCache.addEntry(mockResource, "region1", "credential1", listOf("foo"))
         val comboBox = ResourceSelector.builder(projectRule.project)
             .resource(mockResource)
-            .awsConnection(AwsRegion("region1", "") to mockCred("credential1"))
+            .awsConnection(AwsRegion("region1", "", "aws") to mockCred("credential1"))
             .build()
 
         retryableAssert {

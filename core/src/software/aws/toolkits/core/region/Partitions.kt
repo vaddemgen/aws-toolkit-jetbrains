@@ -21,13 +21,14 @@ data class Partitions(val partitions: List<Partition>) {
 
 data class Partition(
     val partition: String,
+    val partitionName: String,
     val regions: Map<String, PartitionRegion>,
     val services: Map<String, Service>
 )
 
 data class PartitionRegion(val description: String)
 
-data class Service(val endpoints: Map<String, Endpoint>, val isRegionalized: Boolean?) {
+data class Service(val endpoints: Map<String, Endpoint>, val isRegionalized: Boolean?, val partitionEndpoint: String?) {
     val isGlobal = isRegionalized == false
 }
 

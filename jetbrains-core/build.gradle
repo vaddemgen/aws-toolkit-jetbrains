@@ -50,6 +50,8 @@ dependencies {
     compile(project(":core")) {
         exclude group: 'org.slf4j'
     }
+    compile("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1")
+    compile("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.2.1")
     compile("software.amazon.awssdk:s3:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
@@ -65,15 +67,9 @@ dependencies {
     compile("software.amazon.awssdk:cloudformation:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
-    //TODO: Temporary during Schemas development until Schemas Service API/SDK ready
-//    compile("software.amazon.awssdk:schemas:$awsSdkVersion") {
-//        exclude group: 'org.slf4j'
-//    }
-    // TODO: remove after Schemas service is launched and prod-accessible
-    compile(project(":schemas-client")) {
-      exclude group: 'org.slf4j'
+    compile("software.amazon.awssdk:schemas:$awsSdkVersion") {
+        exclude group: 'org.slf4j'
     }
-
     compile("software.amazon.awssdk:cloudwatchlogs:$awsSdkVersion") {
         exclude group: 'org.slf4j'
     }
