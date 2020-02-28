@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogGroups
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogs
 import software.aws.toolkits.resources.message
 
 class CloudWatchLogWindow(private val project: Project) {
@@ -27,9 +28,9 @@ class CloudWatchLogWindow(private val project: Project) {
             return
         }
         val client = project.awsClient<CloudWatchLogsClient>()
-        val groups = CloudWatchLogGroups(client, logGroup)
+        val groups = CloudWatchLogs(client, logGroup)// CloudWatchLogGroups(client, logGroup)
         runInEdt {
-            toolWindow.addTab(logGroup, groups.component, activate = true, id = logGroup)
+            toolWindow.addTab(logGroup, groups.component!!, activate = true, id = logGroup)
         }
     }
 
