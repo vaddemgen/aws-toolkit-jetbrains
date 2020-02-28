@@ -1,6 +1,6 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
-import com.intellij.execution.util.ListTableWithButtons
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.table.TableView
@@ -13,13 +13,13 @@ import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
-import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 import javax.swing.JScrollPane
 import javax.swing.SortOrder
 
-class CloudWatchLogs(private val cloudWatchLogsClient: CloudWatchLogsClient, private val logGroup: String) : SimpleToolWindowPanel(false, false) {
+class CloudWatchLogs(private val project: Project, private val cloudWatchLogsClient: CloudWatchLogsClient, private val logGroup: String) : SimpleToolWindowPanel(false, false) {
     private val table: TableView<LogStream> = TableView(
         ListTableModel<LogStream>(
             arrayOf(CloudWatchLogsColumn(), CloudWatchLogsColumnDate()),
@@ -29,9 +29,21 @@ class CloudWatchLogs(private val cloudWatchLogsClient: CloudWatchLogsClient, pri
         )
     )
     private val scrollPane: JScrollPane = ScrollPaneFactory.createScrollPane(table)
+    private val doubleClickListener = object : MouseAdapter() {
+        override fun mouseClicked(e: MouseEvent) {
+            if (e.clickCount < 2 || e.button != MouseEvent.BUTTON1) {
+                return
+            }
+            val row = table.rowAtPoint(e.point).takeIf { it >= 0 } ?: return
+            val window = CloudWatchLogWindow.getInstance(project)
+            window.showLogStream(logGroup, table.getRow(row).logStreamName())
+        }
+    }
 
     init {
         setContent(scrollPane)
+        table.addMouseListener(doubleClickListener)
+
         GlobalScope.launch {
             populateModel()
         }

@@ -12,7 +12,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
-import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogGroups
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogs
 import software.aws.toolkits.resources.message
 
@@ -28,7 +27,7 @@ class CloudWatchLogWindow(private val project: Project) {
             return
         }
         val client = project.awsClient<CloudWatchLogsClient>()
-        val groups = CloudWatchLogs(client, logGroup)// CloudWatchLogGroups(client, logGroup)
+        val groups = CloudWatchLogs(project, client, logGroup)
         runInEdt {
             toolWindow.addTab(logGroup, groups.component!!, activate = true, id = logGroup)
         }
@@ -39,6 +38,12 @@ class CloudWatchLogWindow(private val project: Project) {
         val console = TextConsoleBuilderFactory.getInstance().createBuilder(project).apply { setViewer(true) }.console
         val id = "$logGroup/$logStream"
         val displayName = title ?: id
+        val existingWindow = toolWindow.find(id)
+        if (existingWindow != null) {
+            runInEdt {
+                existingWindow.dispose()
+            }
+        }
         runInEdt {
             toolWindow.addTab(displayName, console.component, activate = true, id = id)
         }
