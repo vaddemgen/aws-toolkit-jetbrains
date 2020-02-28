@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.openapi.project.Project
 import icons.AwsIcons
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudformation.CloudFormationClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogGroup
 import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerService
@@ -36,4 +38,11 @@ class CloudWatchLogsNode(
     override fun resourceArn() = arn
 
     override fun displayName() = logGroupName
+
+    override fun onDoubleClick() {
+        GlobalScope.launch {
+            val window = project?.let { CloudWatchLogWindow.getInstance(it) }
+            window?.showLogGroup(logGroupName)
+        }
+    }
 }

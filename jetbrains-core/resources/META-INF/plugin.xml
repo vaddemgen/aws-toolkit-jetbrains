@@ -274,6 +274,11 @@
                     class="software.aws.toolkits.jetbrains.services.cloudformation.actions.DeleteStackAction"/>
         </group>
 
+        <group id="aws.toolkit.explorer.cloudwatchlogs" popup="false" compact="false">
+            <action id="cloudwatch.logs.open"
+                    class="software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.OpenWindow"/>
+        </group>
+
         <group id="aws.toolkit.explorer.s3" popup="false" compact="false">
         <action id="s3.create.bucket"
                 class="software.aws.toolkits.jetbrains.services.s3.bucketActions.CreateBucketAction"/>

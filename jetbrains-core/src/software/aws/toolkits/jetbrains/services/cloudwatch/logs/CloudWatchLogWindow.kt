@@ -10,13 +10,30 @@ import com.intellij.openapi.components.ServiceManager
 import com.intellij.openapi.project.Project
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.aws.toolkits.jetbrains.core.awsClient
-import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowManager
+import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogGroups
 import software.aws.toolkits.resources.message
 
 class CloudWatchLogWindow(private val project: Project) {
     private val toolWindow = ToolkitToolWindowManager.getInstance(project, CW_LOGS_TOOL_WINDOW)
-    fun showLog(logGroup: String, logStream: String, fromHead: Boolean = true, title: String? = null) {
+
+    fun showLogGroup(logGroup: String) {
+        val existingWindow = toolWindow.find(logGroup)
+        if (existingWindow != null) {
+            runInEdt {
+                existingWindow.show()
+            }
+            return
+        }
+        val client = project.awsClient<CloudWatchLogsClient>()
+        val groups = CloudWatchLogGroups(client, logGroup)
+        runInEdt {
+            toolWindow.addTab(logGroup, groups.component, activate = true, id = logGroup)
+        }
+    }
+
+    fun showLogStream(logGroup: String, logStream: String, fromHead: Boolean = true, title: String? = null) {
         val client = project.awsClient<CloudWatchLogsClient>()
         val console = TextConsoleBuilderFactory.getInstance().createBuilder(project).apply { setViewer(true) }.console
         val id = "$logGroup/$logStream"
@@ -28,7 +45,7 @@ class CloudWatchLogWindow(private val project: Project) {
         if (events.none()) {
             console.print(message("ecs.service.logs.empty", "$logGroup/$logStream\n"), ConsoleViewContentType.NORMAL_OUTPUT)
         } else {
-            events.forEach { console.print("${it.message()}\n", ConsoleViewContentType.NORMAL_OUTPUT) }
+            events.forEach { console.print("${it.message().trim()}\n", ConsoleViewContentType.NORMAL_OUTPUT) }
         }
     }
 
