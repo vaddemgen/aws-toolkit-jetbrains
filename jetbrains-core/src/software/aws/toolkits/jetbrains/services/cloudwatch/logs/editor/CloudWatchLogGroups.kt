@@ -19,7 +19,8 @@ import java.awt.event.MouseEvent
 import javax.swing.JScrollPane
 import javax.swing.SortOrder
 
-class CloudWatchLogs(private val project: Project, private val cloudWatchLogsClient: CloudWatchLogsClient, private val logGroup: String) : SimpleToolWindowPanel(false, false) {
+class CloudWatchLogs(private val project: Project, private val cloudWatchLogsClient: CloudWatchLogsClient, private val logGroup: String) :
+    SimpleToolWindowPanel(false, false) {
     private val table: TableView<LogStream> = TableView(
         ListTableModel<LogStream>(
             arrayOf(CloudWatchLogsColumn(), CloudWatchLogsColumnDate()),
@@ -36,7 +37,9 @@ class CloudWatchLogs(private val project: Project, private val cloudWatchLogsCli
             }
             val row = table.rowAtPoint(e.point).takeIf { it >= 0 } ?: return
             val window = CloudWatchLogWindow.getInstance(project)
-            window.showLogStream(logGroup, table.getRow(row).logStreamName())
+            GlobalScope.launch {
+                window.showLogStream(logGroup, table.getRow(row).logStreamName())
+            }
         }
     }
 
