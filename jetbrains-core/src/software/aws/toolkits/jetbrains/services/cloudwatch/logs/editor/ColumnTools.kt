@@ -3,12 +3,12 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
+import com.intellij.ui.components.JBTextArea
 import java.awt.Component
 import javax.swing.JTable
-import javax.swing.JTextArea
 import javax.swing.table.TableCellRenderer
 
-object WrapCellRenderer : JTextArea(), TableCellRenderer {
+object WrapCellRenderer : JBTextArea(), TableCellRenderer {
     init {
         lineWrap = true
         wrapStyleWord = true
@@ -22,7 +22,7 @@ object WrapCellRenderer : JTextArea(), TableCellRenderer {
         row: Int,
         column: Int
     ): Component {
-        text = value.toString()
+        text = value.toString().trimEnd()
         setSize(table.columnModel.getColumn(column).width, preferredSize.height)
         if (table.getRowHeight(row) != preferredSize.height) {
             table.setRowHeight(row, preferredSize.height)
