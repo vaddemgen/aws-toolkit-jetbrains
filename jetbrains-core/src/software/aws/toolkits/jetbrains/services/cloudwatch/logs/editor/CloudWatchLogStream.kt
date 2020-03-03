@@ -4,8 +4,14 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.DefaultActionGroup
+import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.util.Disposer
+import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.table.TableView
 import com.intellij.util.ui.ColumnInfo
@@ -13,6 +19,13 @@ import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogStreamClient
+import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAround
+import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.NewFolderAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
+import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
 import software.aws.toolkits.resources.message
 import java.time.Instant
 import java.time.ZoneOffset
@@ -53,12 +66,18 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, logGroup: String, lo
     private val logStreamClient = CloudWatchLogStreamClient(client, logGroup, logStream)
 
     init {
+        Disposer.register(this, logStreamClient)
         // allow one column to be selected for copy paste
         //logsTableView.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION)
         logsTableView.autoResizeMode = JTable.AUTO_RESIZE_ALL_COLUMNS
         val logsScrollPane = ScrollPaneFactory.createScrollPane(logsTableView)
         logsPanel.add(logsScrollPane)
         logStreamClient.loadInitial { runInEdt { logsTableView.tableViewModel.items = it } }
+        setUpTemporaryButtons()
+        addActions()
+    }
+
+    private fun setUpTemporaryButtons() {
         showAsButton.addActionListener {
             wrappingModel.items = logsTableView.tableViewModel.items
             logsTableView.setModelAndUpdateColumns(wrappingModel)
@@ -80,7 +99,16 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, logGroup: String, lo
         }
     }
 
-    override fun dispose() {
-        logStreamClient.dispose()
+    private fun addActions() {
+        val actionGroup = DefaultActionGroup()
+        actionGroup.add(ShowLogsAround())
+        PopupHandler.installPopupHandler(
+            logsTableView,
+            actionGroup,
+            ActionPlaces.EDITOR_POPUP,
+            ActionManager.getInstance()
+        )
     }
+
+    override fun dispose() {}
 }
