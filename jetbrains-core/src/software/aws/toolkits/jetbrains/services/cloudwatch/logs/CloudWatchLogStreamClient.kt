@@ -4,9 +4,11 @@
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs
 
 import com.intellij.openapi.Disposable
+import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -17,20 +19,23 @@ class CloudWatchLogStreamClient(
     private val client: CloudWatchLogsClient,
     private val logGroup: String,
     private val logStream: String
-) : CoroutineScope by GlobalScope, Disposable {
+) : Disposable {
     private var lastLogTimestamp = 0L
+    private var coroutineScope = CoroutineScope(CoroutineName("CloudWatchLogsStream"))
 
-    fun loadInitial(callback: ((List<OutputLogEvent>) -> Unit)) = launch {
-        val events = client.getLogEvents { it.logGroupName(logGroup).logStreamName(logStream) }.events()
-        if (events.isNotEmpty()) {
-            lastLogTimestamp = events.last().timestamp()
-            callback(events)
+    fun loadInitial(callback: ((List<OutputLogEvent>) -> Unit)) {
+        coroutineScope.launch {
+            val events = client.getLogEvents { it.logGroupName(logGroup).logStreamName(logStream) }.events()
+            if (events.isNotEmpty()) {
+                lastLogTimestamp = events.last().timestamp()
+                callback(events)
+            }
         }
     }
 
     fun startStreaming(callback: ((List<OutputLogEvent>) -> Unit)) {
-        if (!this.coroutineContext.isActive) {
-            launch {
+        if (coroutineScope.coroutineContext[Job]?.children?.firstOrNull() == null) {
+            coroutineScope.launch {
                 while (true) {
                     loadMore(callback)
                     delay(1000L)
@@ -40,8 +45,8 @@ class CloudWatchLogStreamClient(
     }
 
     fun pauseStreaming() {
-        if (this.coroutineContext.isActive) {
-            cancel()
+        if (coroutineScope.coroutineContext[Job]?.children?.firstOrNull() != null) {
+            coroutineScope.coroutineContext[Job]?.cancelChildren()
         }
     }
 
