@@ -12,6 +12,10 @@ import com.intellij.util.ui.ListTableModel
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogStreamClient
+import software.aws.toolkits.resources.message
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
@@ -29,8 +33,10 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, val logGroup: String
     lateinit var streamLogsOn: JButton
     lateinit var streamLogsOff: JButton
     private val defaultModel = ListTableModel<OutputLogEvent>(
-        object : ColumnInfo<OutputLogEvent, String>("time <change this is not localized>") {
-            override fun valueOf(item: OutputLogEvent?): String? = item?.timestamp().toString()
+        object : ColumnInfo<OutputLogEvent, String>(message("general.time")) {
+            override fun valueOf(item: OutputLogEvent?): String? = DateTimeFormatter
+                .ISO_LOCAL_DATE_TIME
+                .format(Instant.ofEpochMilli(item?.timestamp() ?: 0).atOffset(ZoneOffset.UTC))
         },
         object : ColumnInfo<OutputLogEvent, String>("message <change this is not localized>") {
             override fun valueOf(item: OutputLogEvent?): String? = item?.message()

@@ -18,10 +18,15 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.DescribeLogStreamsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.LogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogWindow
+import software.aws.toolkits.resources.message
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
 import javax.swing.JScrollPane
 import javax.swing.SortOrder
+import javax.swing.table.TableRowSorter
 
 class CloudWatchLogs(private val project: Project, private val cloudWatchLogsClient: CloudWatchLogsClient, private val logGroup: String) :
     SimpleToolWindowPanel(false, false) {
@@ -48,6 +53,13 @@ class CloudWatchLogs(private val project: Project, private val cloudWatchLogsCli
     }
 
     init {
+        table.rowSorter = object : TableRowSorter<ListTableModel<LogStream>>(table.listTableModel) {
+            init {
+                sortKeys = listOf(SortKey(1, SortOrder.DESCENDING))
+                setSortable(0, false)
+                setSortable(1, false)
+            }
+        }
         setContent(scrollPane)
         table.addMouseListener(doubleClickListener)
 
@@ -66,9 +78,9 @@ class CloudWatchLogsColumn : ColumnInfo<LogStream, String>("log groups <change t
     override fun valueOf(item: LogStream?): String? = item?.logStreamName()
 }
 
-class CloudWatchLogsColumnDate : ColumnInfo<LogStream, String>("date <change this is not localized>") {
+class CloudWatchLogsColumnDate : ColumnInfo<LogStream, String>(message("general.time")) {
     override fun valueOf(item: LogStream?): String? {
         item ?: return null
-        return item.lastEventTimestamp().toString()
+        return DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(Instant.ofEpochMilli(item.lastEventTimestamp()).atOffset(ZoneOffset.UTC))
     }
 }
