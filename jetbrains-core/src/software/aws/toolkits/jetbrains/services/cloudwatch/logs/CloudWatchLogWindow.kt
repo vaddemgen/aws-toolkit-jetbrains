@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.core.toolwindow.ToolkitToolWindowType
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogStream
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor.CloudWatchLogs
 import software.aws.toolkits.resources.message
+import java.time.Instant
 
 class CloudWatchLogWindow(private val project: Project) {
     private val toolWindow = ToolkitToolWindowManager.getInstance(project, CW_LOGS_TOOL_WINDOW)
@@ -44,19 +45,26 @@ class CloudWatchLogWindow(private val project: Project) {
                 existingWindow.dispose()
             }
         }
-        val group = CloudWatchLogStream(client, logGroup, logStream)
+        val group = CloudWatchLogStream(client, logGroup, logStream, fromHead)
         runInEdt {
             toolWindow.addTab(displayName, group.content, activate = true, id = id, disposer = group)
         }
-        /*
-        val events = client.getLogEventsPaginator { it.logGroupName(logGroup).logStreamName(logStream).startFromHead(fromHead) }.events()
-        if (events.none()) {
-            console.print(message("ecs.service.logs.empty", "$logGroup/$logStream\n"), ConsoleViewContentType.NORMAL_OUTPUT)
-        } else {
-            events.forEach { console.print("${it.message().trim()}\n", ConsoleViewContentType.NORMAL_OUTPUT) }
-        }*/
-        // allow one column to be selected for copy paste
-        // table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+    }
+
+    fun showLogStreamAround(logGroup: String, logStream: String, startTime: Long, timeScale: Long) {
+        val client = project.awsClient<CloudWatchLogsClient>()
+        val id = "$logGroup/$logStream $startTime$timeScale"
+        // dispose existing window if it exists to update. TODO fix this massive hack
+        val existingWindow = toolWindow.find(id)
+        if (existingWindow != null) {
+            runInEdt {
+                existingWindow.dispose()
+            }
+        }
+        val group = CloudWatchLogStream(client, logGroup, logStream, false, startTime, timeScale)
+        runInEdt {
+            toolWindow.addTab(id, group.content, activate = true, id = id, disposer = group)
+        }
     }
 
     companion object {

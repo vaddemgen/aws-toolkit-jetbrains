@@ -12,18 +12,48 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
+import software.amazon.awssdk.services.cloudwatchlogs.model.GetLogEventsRequest
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 
 class CloudWatchLogStreamClient(
     private val client: CloudWatchLogsClient,
     private val logGroup: String,
-    private val logStream: String
+    private val logStream: String,
+    private val fromHead: Boolean
 ) : CoroutineScope by CoroutineScope(CoroutineName("CloudWatchLogsStream")), Disposable {
+    private var firstLogTimestamp = 0L
     private var lastLogTimestamp = 0L
 
-    fun loadInitial(callback: ((List<OutputLogEvent>) -> Unit)) {
+    private fun logRequest(request: GetLogEventsRequest, callback: ((List<OutputLogEvent>) -> Unit)) {
         launch {
-            val events = client.getLogEvents { it.logGroupName(logGroup).logStreamName(logStream) }.events()
+            val events = client.getLogEvents(request).events()
+            if (events.isNotEmpty()) {
+                lastLogTimestamp = events.last().timestamp()
+                callback(events)
+            }
+        }
+    }
+
+    fun loadInitialAround(startTime: Long, timeScale: Long, callback: ((List<OutputLogEvent>) -> Unit)) {
+        logRequest(
+            GetLogEventsRequest
+                .builder()
+                .logGroupName(logGroup)
+                .logStreamName(logStream)
+                .startTime(startTime - timeScale)
+                .endTime(startTime + timeScale).build(),
+            callback
+        )
+    }
+
+    fun loadInitial(callback: ((List<OutputLogEvent>) -> Unit)) {
+        logRequest(GetLogEventsRequest.builder().logGroupName(logGroup).logStreamName(logStream).startFromHead(fromHead).build(), callback)
+    }
+
+    // TODO implement
+    fun loadMore(callback: (List<OutputLogEvent>) -> Unit) {
+        launch {
+            val events = listOf<OutputLogEvent>()
             if (events.isNotEmpty()) {
                 lastLogTimestamp = events.last().timestamp()
                 callback(events)
@@ -35,7 +65,7 @@ class CloudWatchLogStreamClient(
         if (coroutineContext[Job]?.children?.firstOrNull() == null) {
             launch {
                 while (true) {
-                    loadMore(callback)
+                    streamMore(callback)
                     delay(1000L)
                 }
             }
@@ -48,7 +78,7 @@ class CloudWatchLogStreamClient(
         }
     }
 
-    private fun loadMore(callback: ((List<OutputLogEvent>) -> Unit)) {
+    private fun streamMore(callback: ((List<OutputLogEvent>) -> Unit)) {
         // Add 1 millisecond to query more events
         val queryTimestamp = lastLogTimestamp + 1
         val newEvents = client

@@ -7,7 +7,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionPlaces
 import com.intellij.openapi.actionSystem.DefaultActionGroup
-import com.intellij.openapi.actionSystem.Separator
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.openapi.util.Disposer
@@ -20,12 +19,6 @@ import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.CloudWatchLogStreamClient
 import software.aws.toolkits.jetbrains.services.cloudwatch.logs.actions.ShowLogsAround
-import software.aws.toolkits.jetbrains.services.s3.objectActions.CopyPathAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.DeleteObjectAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.DownloadObjectAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.NewFolderAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.RenameObjectAction
-import software.aws.toolkits.jetbrains.services.s3.objectActions.UploadObjectAction
 import software.aws.toolkits.resources.message
 import java.time.Instant
 import java.time.ZoneOffset
@@ -37,7 +30,14 @@ import javax.swing.JTable
 import javax.swing.JTextField
 import javax.swing.table.TableCellRenderer
 
-class CloudWatchLogStream(val client: CloudWatchLogsClient, logGroup: String, logStream: String) : SimpleToolWindowPanel(false, false), Disposable {
+class CloudWatchLogStream(
+    client: CloudWatchLogsClient,
+    private val logGroup: String,
+    private val logStream: String,
+    fromHead: Boolean,
+    startTime: Long? = null,
+    timeScale: Long? = null
+) : SimpleToolWindowPanel(false, false), Disposable {
     lateinit var content: JPanel
     lateinit var logsPanel: JPanel
     lateinit var searchLabel: JLabel
@@ -63,7 +63,7 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, logGroup: String, lo
             override fun getRenderer(item: OutputLogEvent?): TableCellRenderer? = WrapCellRenderer
         })
     private var logsTableView: TableView<OutputLogEvent> = TableView<OutputLogEvent>(defaultModel)
-    private val logStreamClient = CloudWatchLogStreamClient(client, logGroup, logStream)
+    private val logStreamClient = CloudWatchLogStreamClient(client, logGroup, logStream, fromHead)
 
     init {
         Disposer.register(this, logStreamClient)
@@ -72,7 +72,11 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, logGroup: String, lo
         logsTableView.autoResizeMode = JTable.AUTO_RESIZE_ALL_COLUMNS
         val logsScrollPane = ScrollPaneFactory.createScrollPane(logsTableView)
         logsPanel.add(logsScrollPane)
-        logStreamClient.loadInitial { runInEdt { logsTableView.tableViewModel.items = it } }
+        if(startTime != null && timeScale != null) {
+            logStreamClient.loadInitialAround(startTime, timeScale){ runInEdt { logsTableView.tableViewModel.items = it } }
+        } else {
+            logStreamClient.loadInitial { runInEdt { logsTableView.tableViewModel.items = it } }
+        }
         setUpTemporaryButtons()
         addActions()
     }
@@ -101,7 +105,7 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, logGroup: String, lo
 
     private fun addActions() {
         val actionGroup = DefaultActionGroup()
-        actionGroup.add(ShowLogsAround())
+        actionGroup.add(ShowLogsAround(logGroup, logStream, logsTableView))
         PopupHandler.installPopupHandler(
             logsTableView,
             actionGroup,
