@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.cloudwatch.logs.editor
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.ui.SimpleToolWindowPanel
 import com.intellij.ui.ScrollPaneFactory
@@ -23,7 +24,7 @@ import javax.swing.JTable
 import javax.swing.JTextField
 import javax.swing.table.TableCellRenderer
 
-class CloudWatchLogStream(val client: CloudWatchLogsClient, val logGroup: String, val logStream: String) : SimpleToolWindowPanel(false, false) {
+class CloudWatchLogStream(val client: CloudWatchLogsClient, logGroup: String, logStream: String) : SimpleToolWindowPanel(false, false), Disposable {
     lateinit var content: JPanel
     lateinit var logsPanel: JPanel
     lateinit var searchLabel: JLabel
@@ -52,7 +53,6 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, val logGroup: String
     private val logStreamClient = CloudWatchLogStreamClient(client, logGroup, logStream)
 
     init {
-
         // allow one column to be selected for copy paste
         //logsTableView.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION)
         logsTableView.autoResizeMode = JTable.AUTO_RESIZE_ALL_COLUMNS
@@ -78,5 +78,9 @@ class CloudWatchLogStream(val client: CloudWatchLogsClient, val logGroup: String
         streamLogsOff.addActionListener {
             logStreamClient.pauseStreaming()
         }
+    }
+
+    override fun dispose() {
+        logStreamClient.dispose()
     }
 }

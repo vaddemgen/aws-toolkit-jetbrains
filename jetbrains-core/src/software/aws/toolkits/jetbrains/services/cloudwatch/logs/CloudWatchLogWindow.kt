@@ -46,7 +46,7 @@ class CloudWatchLogWindow(private val project: Project) {
         }
         val group = CloudWatchLogStream(client, logGroup, logStream)
         runInEdt {
-            toolWindow.addTab(displayName, group.content, activate = true, id = id)
+            toolWindow.addTab(displayName, group.content, activate = true, id = id, disposer = group)
         }
         /*
         val events = client.getLogEventsPaginator { it.logGroupName(logGroup).logStreamName(logStream).startFromHead(fromHead) }.events()

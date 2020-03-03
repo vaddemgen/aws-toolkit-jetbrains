@@ -10,7 +10,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import software.amazon.awssdk.services.cloudwatchlogs.CloudWatchLogsClient
 import software.amazon.awssdk.services.cloudwatchlogs.model.OutputLogEvent
@@ -19,12 +18,11 @@ class CloudWatchLogStreamClient(
     private val client: CloudWatchLogsClient,
     private val logGroup: String,
     private val logStream: String
-) : Disposable {
+) : CoroutineScope by CoroutineScope(CoroutineName("CloudWatchLogsStream")), Disposable {
     private var lastLogTimestamp = 0L
-    private var coroutineScope = CoroutineScope(CoroutineName("CloudWatchLogsStream"))
 
     fun loadInitial(callback: ((List<OutputLogEvent>) -> Unit)) {
-        coroutineScope.launch {
+        launch {
             val events = client.getLogEvents { it.logGroupName(logGroup).logStreamName(logStream) }.events()
             if (events.isNotEmpty()) {
                 lastLogTimestamp = events.last().timestamp()
@@ -34,8 +32,8 @@ class CloudWatchLogStreamClient(
     }
 
     fun startStreaming(callback: ((List<OutputLogEvent>) -> Unit)) {
-        if (coroutineScope.coroutineContext[Job]?.children?.firstOrNull() == null) {
-            coroutineScope.launch {
+        if (coroutineContext[Job]?.children?.firstOrNull() == null) {
+            launch {
                 while (true) {
                     loadMore(callback)
                     delay(1000L)
@@ -45,8 +43,8 @@ class CloudWatchLogStreamClient(
     }
 
     fun pauseStreaming() {
-        if (coroutineScope.coroutineContext[Job]?.children?.firstOrNull() != null) {
-            coroutineScope.coroutineContext[Job]?.cancelChildren()
+        if (coroutineContext[Job]?.children?.firstOrNull() != null) {
+            coroutineContext[Job]?.cancelChildren()
         }
     }
 
@@ -65,5 +63,6 @@ class CloudWatchLogStreamClient(
 
     override fun dispose() {
         pauseStreaming()
+        cancel()
     }
 }
