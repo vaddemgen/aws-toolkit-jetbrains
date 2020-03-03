@@ -26,6 +26,7 @@ import java.time.format.DateTimeFormatter
 import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
+import javax.swing.JScrollBar
 import javax.swing.JTable
 import javax.swing.JTextField
 import javax.swing.table.TableCellRenderer
@@ -68,12 +69,16 @@ class CloudWatchLogStream(
     init {
         Disposer.register(this, logStreamClient)
         // allow one column to be selected for copy paste
-        //logsTableView.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION)
         logsTableView.autoResizeMode = JTable.AUTO_RESIZE_ALL_COLUMNS
         val logsScrollPane = ScrollPaneFactory.createScrollPane(logsTableView)
+        logsScrollPane.verticalScrollBar.addAdjustmentListener {
+            if (logsScrollPane.verticalScrollBar.isAtBottom() && logsTableView.model.rowCount > 0) {
+                logStreamClient.loadMore { runInEdt { logsTableView.tableViewModel.items = it } }
+            }
+        }
         logsPanel.add(logsScrollPane)
-        if(startTime != null && timeScale != null) {
-            logStreamClient.loadInitialAround(startTime, timeScale){ runInEdt { logsTableView.tableViewModel.items = it } }
+        if (startTime != null && timeScale != null) {
+            logStreamClient.loadInitialAround(startTime, timeScale) { runInEdt { logsTableView.tableViewModel.items = it } }
         } else {
             logStreamClient.loadInitial { runInEdt { logsTableView.tableViewModel.items = it } }
         }
@@ -115,4 +120,7 @@ class CloudWatchLogStream(
     }
 
     override fun dispose() {}
+
+    private fun JScrollBar.isAtBottom(): Boolean = value == maximum - visibleAmount
 }
+

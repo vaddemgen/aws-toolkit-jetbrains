@@ -52,14 +52,21 @@ class CloudWatchLogStreamClient(
 
     // TODO implement
     fun loadMore(callback: (List<OutputLogEvent>) -> Unit) {
-        launch {
-            val events = listOf<OutputLogEvent>()
-            if (events.isNotEmpty()) {
-                lastLogTimestamp = events.last().timestamp()
-                callback(events)
+        if (coroutineContext[Job]?.children?.firstOrNull() == null) {
+            launch {
+                streamMore(callback)
             }
         }
     }
+    /*
+    launch {
+        val events = listOf<OutputLogEvent>()
+        if (events.isNotEmpty()) {
+            lastLogTimestamp = events.last().timestamp()
+            callback(events)
+        }
+    }
+}*/
 
     fun startStreaming(callback: ((List<OutputLogEvent>) -> Unit)) {
         if (coroutineContext[Job]?.children?.firstOrNull() == null) {
@@ -82,7 +89,7 @@ class CloudWatchLogStreamClient(
         // Add 1 millisecond to query more events
         val queryTimestamp = lastLogTimestamp + 1
         val newEvents = client
-            .getLogEventsPaginator { it.logGroupName(logGroup).logStreamName(logStream).startTime(queryTimestamp).build() }
+            .getLogEvents { it.logGroupName(logGroup).logStreamName(logStream).startTime(queryTimestamp).build() }
             .events()
             .filterNotNull()
         if (newEvents.isNotEmpty()) {
