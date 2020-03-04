@@ -11,5 +11,6 @@ data class SamOptions(
     var buildInContainer: Boolean = false,
     var skipImagePull: Boolean = false,
     var additionalBuildArgs: String? = null,
+    var buildDir: String? = null,
     var additionalLocalArgs: String? = null
 )

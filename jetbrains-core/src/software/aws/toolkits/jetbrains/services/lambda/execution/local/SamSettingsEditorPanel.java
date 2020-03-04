@@ -17,4 +17,9 @@ public class SamSettingsEditorPanel {
     ExpandableTextField additionalBuildArgs;
     ExpandableTextField additionalLocalArgs;
     ComboBox<String> debugHostChooser;
+    JTextField buildDir;
+
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
+    }
 }

@@ -30,6 +30,7 @@ import software.aws.toolkits.jetbrains.services.lambda.sam.SamTemplateUtils
 import software.aws.toolkits.resources.message
 import java.io.File
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ExecutionException
 
@@ -56,7 +57,7 @@ abstract class LambdaBuilder {
     ): BuiltLambda {
         val baseDir = baseDirectory(module, handlerElement)
 
-        val customTemplate = File(getOrCreateBuildDirectory(module), "template.yaml")
+        val customTemplate = File(getSamBuildDirectory(samOptions, module), "template.yaml")
         FileUtil.createIfDoesntExist(customTemplate)
 
         val logicalId = "Function"
@@ -92,7 +93,8 @@ abstract class LambdaBuilder {
         }
 
         ApplicationManager.getApplication().executeOnPooledThread {
-            val buildDir = getOrCreateBuildDirectory(module).toPath()
+
+            val buildDir = getSamBuildDirectory(samOptions, module).toPath()
 
             val commandLine = SamCommon.getSamCommandLine()
                 .withParameters("build")
@@ -165,6 +167,17 @@ abstract class LambdaBuilder {
             future.get()
         } catch (e: ExecutionException) {
             throw e.cause ?: e
+        }
+    }
+
+    private fun getSamBuildDirectory(
+        samOptions: SamOptions,
+        module: Module
+    ): File {
+        return if (samOptions.buildDir != null && samOptions.buildDir!!.isNotBlank()) {
+            Paths.get(samOptions.buildDir!!).toFile()
+        } else {
+            getOrCreateBuildDirectory(module)
         }
     }
 

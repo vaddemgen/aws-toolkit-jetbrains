@@ -51,6 +51,7 @@ class SamSettingsEditor : SettingsEditor<LocalLambdaRunConfiguration>() {
         view.buildInContainer.isSelected = configuration.buildInContainer()
         view.additionalBuildArgs.text = configuration.additionalBuildArgs()
         view.additionalLocalArgs.text = configuration.additionalLocalArgs()
+        view.buildDir.text = configuration.buildDir()
     }
 
     override fun applyEditorTo(configuration: LocalLambdaRunConfiguration) {
@@ -60,6 +61,7 @@ class SamSettingsEditor : SettingsEditor<LocalLambdaRunConfiguration>() {
         configuration.buildInContainer(view.buildInContainer.isSelected)
         configuration.additionalBuildArgs(view.additionalBuildArgs.text.trim())
         configuration.additionalLocalArgs(view.additionalLocalArgs.text.trim())
+        configuration.buildDir(view.buildDir.text.trim())
     }
 
     private companion object {

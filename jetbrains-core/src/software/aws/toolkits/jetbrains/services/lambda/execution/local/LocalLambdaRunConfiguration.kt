@@ -276,6 +276,12 @@ class LocalLambdaRunConfiguration(project: Project, factory: ConfigurationFactor
         serializableOptions.samOptions.additionalLocalArgs = args
     }
 
+    fun buildDir(): String? = serializableOptions.samOptions.buildDir
+
+    fun buildDir(buildDir: String) {
+        serializableOptions.samOptions.buildDir = buildDir
+    }
+
     override fun suggestedName(): String? {
         val subName = serializableOptions.functionOptions.logicalId ?: handlerDisplayName()
         return "[${message("lambda.run_configuration.local")}] $subName"
